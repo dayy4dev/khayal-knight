@@ -1,7 +1,10 @@
 fileFormatVersion: 2
 guid: f48e21cb2f0b3e040a0ebbbdd2831875
 TextureImporter:
-  internalIDToNameTable: []
+  internalIDToNameTable:
+  - first:
+      213: 7219974222421133486
+    second: Download wallpaper 3840x2160 forest, trees, fog 4k uhd 16_9 hd background_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -108,7 +111,29 @@ TextureImporter:
     forceMaximumCompressionQuality_BC6H_BC7: 0
   spriteSheet:
     serializedVersion: 2
-    sprites: []
+    sprites:
+    - serializedVersion: 2
+      name: Download wallpaper 3840x2160 forest, trees, fog 4k uhd 16_9 hd background_0
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 0
+        width: 736
+        height: 414
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ea883ee5d40823460800000000000000
+      internalID: 7219974222421133486
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
     outline: []
     customData: 
     physicsShape: []

@@ -2970,7 +2970,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: aa22c78f1d471f949ae54c13f8392811, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ToyHammerVFX_V2
-  boomVfxPrefab: {fileID: 2413902348072329874, guid: 9b35e1ca49ac8b544a7054f38339bf0b, type: 3}
+  boomVfxPrefab: {fileID: 1611651468995858867, guid: 43b7bed7fde6d8140bfaf93d63e58e21, type: 3}
   offset: {x: 0, y: 0.5, z: 0.8}
   localScale: {x: 5, y: 5, z: 5}
   localRotation: {x: 0, y: 0, z: 0}

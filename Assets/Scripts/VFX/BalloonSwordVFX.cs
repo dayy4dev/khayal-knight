@@ -67,6 +67,15 @@ public class BalloonSwordVFX : MonoBehaviour
         {
             animator.Play("VFX_SlashSingle", 0, 0f);
         }
+        else
+        {
+            var vp = vfx.GetComponentInChildren<UnityEngine.Video.VideoPlayer>();
+            if (vp != null)
+            {
+                vp.time = 0;
+                vp.Play();
+            }
+        }
 
         Destroy(vfx, destroyAfter);
     }

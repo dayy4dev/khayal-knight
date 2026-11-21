@@ -15731,7 +15731,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2b47c7c99f731d84e9ec64b56c2a6e65, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerHealth
-  maxHealth: 11594
+  maxHealth: 100
   deathSceneReloadDelay: 2
   playerAudioSource: {fileID: 1221553389}
   hurtSounds:

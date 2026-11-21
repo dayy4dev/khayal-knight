@@ -85,46 +85,33 @@ public class PlayerAttack : MonoBehaviour
         return currentComboHit;
     }
 
-   void Update()
-{
-    // Jika game sedang dipause, jangan panggil serangan
-    if (GameManager.Instance != null && !GameManager.Instance.IsPlaying)
-        return;
-
-    if (Input.GetMouseButtonDown(0))
+    void Update()
     {
-        Weapon activeWeapon = GetActiveWeapon();
+        // Jika game sedang dipause, jangan panggil serangan
+        if (GameManager.Instance != null && !GameManager.Instance.IsPlaying)
+            return;
 
-        // Semua senjata selain HandCannon harus aim dulu
-        if (!(activeWeapon is HandCannon))
+        if (TutorialBackstory.IsBackstoryRunning)
+            return;
+
+        if (TutorialManager.Instance != null && TutorialManager.Instance.dialoguePanel != null && TutorialManager.Instance.dialoguePanel.activeSelf)
+            return;
+
+        if (Input.GetMouseButtonDown(0))
         {
-            if (!Input.GetMouseButton(1))
-            {
-                Debug.Log("[PlayerAttack] Harus Aim (Mouse Kanan) terlebih dahulu!");
-                return;
-            }
+            ExecuteAttack();
         }
-        else
-        {
-            // HandCannon tetap memakai sistemnya sendiri
-            HandCannon handCannon = (HandCannon)activeWeapon;
-
-            if (!handCannon.CanShoot())
-            {
-                Debug.Log("[PlayerAttack] Serangan dibatalkan karena player tidak menahan klik kanan!");
-                return;
-            }
-        }
-
-        ExecuteAttack();
     }
-}
 
-   private void ExecuteAttack()
+    private void ExecuteAttack()
     {
         if (playerHealth != null && playerHealth.IsDead) return;
 
         if (activeWeaponComponent != null && !activeWeaponComponent.CanAttack()) return;
+
+        // Hadapkan player ke arah mouse saat menyerang
+        PlayerMovement pm = GetComponent<PlayerMovement>();
+        if (pm != null) pm.AimTowardsMouse(true);
 
         // 2. CEK COMBO COOLDOWN — jangan advance combo jika animasi sebelumnya
         //    masih dalam cooldown (mencegah combo skip)
@@ -139,7 +126,7 @@ public class PlayerAttack : MonoBehaviour
         }
         else
         {
-            int maxCombo = (currentWeaponData != null) ? currentWeaponData.maxComboCount : 3;
+            int maxCombo = (currentWeaponData != null) ? Mathf.Max(1, currentWeaponData.maxComboCount) : 3;
             currentComboHit = (currentComboHit % maxCombo) + 1;
         }
 
@@ -147,6 +134,9 @@ public class PlayerAttack : MonoBehaviour
 
         string weaponName = (currentWeaponData != null) ? currentWeaponData.weaponName : "Tangan Kosong";
         Debug.Log($"[Attack Melee] Mengayunkan {weaponName} | Combo Hit: {currentComboHit}");
+
+        // Mainkan SFX serangan
+        PlayAttackSound();
 
         // Notify animation system — fires for EVERY click, even when combo value wraps
         OnAttackExecuted?.Invoke(currentComboHit);
@@ -199,25 +189,27 @@ public class PlayerAttack : MonoBehaviour
         // --- PENGAMAN UTAMA: Jika data senjata null, langsung hitung Tangan Kosong + Buff ---
         if (currentWeaponData == null)
         {
-            finalDamage = currentWeaponData.damage + (permanentDamageBuff / currentWeaponData.maxComboCount); 
+            int baseUnarmedDmg = 15;
+            finalDamage = baseUnarmedDmg + (permanentDamageBuff / 3); 
             stunDuration = 0.3f;
-            Debug.LogWarning("[PlayerAttack] currentWeaponData null! Menggunakan rumus Tangan Kosong + Buff.");
+            Debug.Log("[PlayerAttack] currentWeaponData null! Menggunakan rumus Tangan Kosong + Buff.");
             return;
         }
 
         // Ambil kategori secara aman
         string category = GetWeaponCategory(currentWeaponData);
+        int maxCombo = Mathf.Max(1, currentWeaponData.maxComboCount);
 
         // --- RUMUS MELEE UNTUK CANNON/HANDCANNON ---
         if (category == "Cannon")
         {
-            finalDamage = currentWeaponData.damage + (permanentDamageBuff / currentWeaponData.maxComboCount*2);
+            finalDamage = currentWeaponData.damage + (permanentDamageBuff / (maxCombo * 2));
             stunDuration = 0f; 
             return;
         }
 
         // --- RUMUS MELEE UNTUK SWORD (BALLOONSWORD) & HAMMER ---
-        int baseTotal = currentWeaponData.damage + (permanentDamageBuff / currentWeaponData.maxComboCount);
+        int baseTotal = currentWeaponData.damage + (permanentDamageBuff / maxCombo);
         finalDamage = baseTotal;
         stunDuration = 0.3f;
 

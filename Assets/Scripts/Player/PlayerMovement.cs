@@ -5,7 +5,7 @@ public class PlayerMovement : MonoBehaviour
 {
     [Header("Movement")]
     [Tooltip("Kecepatan gerak player")]
-    public float moveSpeed = 2f;
+    public float moveSpeed = 6f;
 
     [Header("Gravity")]
     [SerializeField] private float gravity = -9.81f;
@@ -13,6 +13,8 @@ public class PlayerMovement : MonoBehaviour
     [Header("Aim Indicator")]
     [Tooltip("Masukkan GameObject Lingkaran Merah di sini")]
     public Transform aimIndicator;
+
+    public bool canMove = true;
 
     private CharacterController controller;
     private Animator animator;
@@ -108,6 +110,9 @@ public class PlayerMovement : MonoBehaviour
     {
         if (controller == null) return;
 
+        // Jangan izinkan gerak saat backstory atau dinonaktifkan
+        if (!canMove || TutorialBackstory.IsBackstoryRunning) return;
+
         // Jalankan pengecekan suara terlebih dahulu agar bisa merespon state pause dengan cepat
         HandleFootstepSound();
 
@@ -125,10 +130,6 @@ public class PlayerMovement : MonoBehaviour
         {
             aimIndicator.gameObject.SetActive(true);
         }
-        if (aimIndicator != null && !aimIndicator.gameObject.activeSelf)
-        {
-            aimIndicator.gameObject.SetActive(true);
-        }
 
         CalculateGravity();
         CalculateMovementInput();
@@ -141,7 +142,10 @@ public class PlayerMovement : MonoBehaviour
 
     private void CalculateMouseWorldPosition()
     {
-        Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+        Camera mainCam = Camera.main;
+        if (mainCam == null) return;
+
+        Ray ray = mainCam.ScreenPointToRay(Input.mousePosition);
         Plane groundPlane = new Plane(Vector3.up, new Vector3(0f, transform.position.y, 0f));
 
         if (groundPlane.Raycast(ray, out float distance))
@@ -157,7 +161,7 @@ public class PlayerMovement : MonoBehaviour
         }
     }
 
-    public void AimTowardsMouse()
+    public void AimTowardsMouse(bool instant = false)
     {
         Vector3 direction = new Vector3(
             GetMouseTargetPosition.x - transform.position.x,
@@ -168,7 +172,10 @@ public class PlayerMovement : MonoBehaviour
         if (direction != Vector3.zero)
         {
             Quaternion targetRotation = Quaternion.LookRotation(direction);
-            transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, 15f * Time.deltaTime);
+            if (instant)
+                transform.rotation = targetRotation;
+            else
+                transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, 25f * Time.deltaTime);
         }
     }
 
@@ -191,23 +198,24 @@ public class PlayerMovement : MonoBehaviour
         if (animator == null) return;
 
         Vector3 localMove = transform.InverseTransformDirection(moveDirection);
-        float smoothSpeed = Time.deltaTime * 5f;
+        float smoothSpeed = Time.deltaTime * 10f;
         animator.SetFloat(AnimHorizontal, Mathf.MoveTowards(animator.GetFloat(AnimHorizontal), localMove.x, smoothSpeed));
         animator.SetFloat(AnimVertical, Mathf.MoveTowards(animator.GetFloat(AnimVertical), localMove.z, smoothSpeed));
     }
 
     private void HandleRotation()
     {
-        if (Input.GetMouseButton(1))
+        // Aim towards mouse if aiming (holding right-click) or attacking (holding/pressing left-click)
+        if (Input.GetMouseButton(1) || Input.GetMouseButton(0))
         {
-            AimTowardsMouse();
+            AimTowardsMouse(Input.GetMouseButtonDown(0));
         }
         else
         {
             if (moveDirection != Vector3.zero)
             {
                 Quaternion targetRotation = Quaternion.LookRotation(moveDirection);
-                transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, 10f * Time.deltaTime);
+                transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, 15f * Time.deltaTime);
             }
         }
     }

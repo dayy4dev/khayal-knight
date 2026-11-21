@@ -6,59 +6,79 @@ using TMPro;
 
 public class TutorialBackstory : MonoBehaviour
 {
+    public static bool IsBackstoryRunning { get; private set; } = false;
+
     [Header("UI Komponen (Gambar & Narasi)")]
     [SerializeField] private GameObject backstoryCanvas;      // Canvas utama backstory
     [SerializeField] private Image backstoryBgImage;           // Gambar Latar/Ilustrasi yang akan berubah-ubah
     [SerializeField] private TextMeshProUGUI backstoryText;    // Teks Narasi Cerita
+    [SerializeField] private Button skipButton;
 
     [Header("UI Gameplay Tutorial")]
     [SerializeField] private GameObject gameplayTutorialUI;    // UI asli game tutorial (HUD, dll)
 
     [Header("Pengaturan Cerita")]
     [SerializeField] private float textSpeed = 0.05f;         // Kecepatan mesin tik teks
-    [SerializeField] private float gameplayDelay = 1.5f;       // Jeda waktu diam setelah layar terbuka lagi
+    [SerializeField] private float gameplayDelay = 0.5f;       // Jeda waktu diam setelah layar terbuka lagi
     [SerializeField] private List<StoryBlockTutorial> backstorySequence; // List data Gambar + Teks
-
-    
 
     private int currentLineIndex = 0;
     private bool isTyping = false;
+    private bool hasFinished = false;
 
-    private void Start()
+    private void Awake()
     {
-        // Cek apakah backstory sudah diselesaikan
-        if (PlayerPrefs.GetInt("BackstoryFinished", 0) == 1)
+        hasFinished = false;
+        if (backstoryCanvas != null && backstorySequence != null && backstorySequence.Count > 0)
         {
-            if (backstoryCanvas != null) backstoryCanvas.SetActive(false);
-            
-            PlayerPrefs.SetInt("BackstoryFinished", 0);
-            PlayerPrefs.Save();
-
-            StartCoroutine(StartGameplayWithDelay());
+            IsBackstoryRunning = true;
         }
         else
         {
-            // Tampilkan cerita jika ini pertama kalinya
-            if (gameplayTutorialUI != null) gameplayTutorialUI.SetActive(false);
+            IsBackstoryRunning = false;
+        }
+    }
 
-            if (backstoryCanvas != null && backstorySequence != null && backstorySequence.Count > 0)
-            {
-                backstoryCanvas.SetActive(true);
-                currentLineIndex = 0;
-                StartCoroutine(TypeStoryLine());
-            }
-            else
-            {
-                EndBackstoryAndStartTutorial();
-            }
+    private void Start()
+    {
+        if (skipButton == null && backstoryCanvas != null)
+        {
+            skipButton = backstoryCanvas.GetComponentInChildren<Button>(true);
+        }
+        if (skipButton != null)
+        {
+            skipButton.onClick.RemoveListener(EndBackstoryAndStartTutorial);
+            skipButton.onClick.AddListener(EndBackstoryAndStartTutorial);
+        }
+
+        if (gameplayTutorialUI != null) gameplayTutorialUI.SetActive(false);
+
+        if (backstoryCanvas != null && backstorySequence != null && backstorySequence.Count > 0)
+        {
+            backstoryCanvas.SetActive(true);
+            currentLineIndex = 0;
+            StartCoroutine(TypeStoryLine());
+        }
+        else
+        {
+            EndBackstoryAndStartTutorial();
         }
     }
 
     private void Update()
     {
+        if (hasFinished) return;
+
         if (backstoryCanvas != null && backstoryCanvas.activeSelf)
         {
-            // Klik untuk memajukan narasi
+            // Escape to skip completely immediately
+            if (Input.GetKeyDown(KeyCode.Escape))
+            {
+                EndBackstoryAndStartTutorial();
+                return;
+            }
+
+            // Klik atau spasi untuk memajukan narasi
             if (Input.GetMouseButtonDown(0) || Input.GetKeyDown(KeyCode.Space) || Input.GetKeyDown(KeyCode.Return))
             {
                 OnScreenClicked();
@@ -69,30 +89,36 @@ public class TutorialBackstory : MonoBehaviour
     private IEnumerator TypeStoryLine()
     {
         isTyping = true;
-        backstoryText.text = "";
+        if (backstoryText != null) backstoryText.text = "";
 
-        // Ambil data gambar dan teks pada urutan saat ini
+        if (currentLineIndex < 0 || currentLineIndex >= backstorySequence.Count)
+        {
+            isTyping = false;
+            yield break;
+        }
+
         StoryBlockTutorial currentBlock = backstorySequence[currentLineIndex];
 
-        // Ganti Gambar Latar Belakang / Ilustrasi
         if (backstoryBgImage != null)
         {
             if (currentBlock.storyIllustration != null)
             {
                 backstoryBgImage.gameObject.SetActive(true);
-                backstoryBgImage.sprite = currentBlock.storyIllustration; // Gambar berganti di sini
+                backstoryBgImage.sprite = currentBlock.storyIllustration;
             }
             else
             {
-                backstoryBgImage.gameObject.SetActive(false); // Kalau tidak ada gambar, jadikan layar hitam
+                backstoryBgImage.gameObject.SetActive(false);
             }
         }
 
-        // Tampilkan teks dengan efek mengetik
-        foreach (char letter in currentBlock.dialogueText.ToCharArray())
+        if (backstoryText != null && !string.IsNullOrEmpty(currentBlock.dialogueText))
         {
-            backstoryText.text += letter;
-            yield return new WaitForSeconds(textSpeed);
+            foreach (char letter in currentBlock.dialogueText.ToCharArray())
+            {
+                backstoryText.text += letter;
+                yield return new WaitForSeconds(textSpeed);
+            }
         }
 
         isTyping = false;
@@ -100,18 +126,20 @@ public class TutorialBackstory : MonoBehaviour
 
     public void OnScreenClicked()
     {
+        if (hasFinished) return;
+
         if (isTyping)
         {
-            // Munculkan semua teks langsung jika diklik saat mengetik
             StopAllCoroutines();
-            backstoryText.text = backstorySequence[currentLineIndex].dialogueText;
+            if (currentLineIndex < backstorySequence.Count && backstoryText != null)
+            {
+                backstoryText.text = backstorySequence[currentLineIndex].dialogueText;
+            }
             isTyping = false;
         }
         else
         {
-            // Maju ke narasi & gambar berikutnya
             currentLineIndex++;
-
             if (currentLineIndex < backstorySequence.Count)
             {
                 StartCoroutine(TypeStoryLine());
@@ -123,41 +151,39 @@ public class TutorialBackstory : MonoBehaviour
         }
     }
 
-    private void EndBackstoryAndStartTutorial()
+    public void EndBackstoryAndStartTutorial()
     {
-        StopAllCoroutines();
-        
-        PlayerPrefs.SetInt("BackstoryFinished", 1);
-        PlayerPrefs.Save();
+        if (hasFinished) return;
+        hasFinished = true;
+        IsBackstoryRunning = false;
 
-        // Menggunakan LevelManager bawaan untuk reload dengan CircleWipe
-        if (LevelManager.Instance != null)
-        {
-            LevelManager.Instance.LoadScene("Tutorial", "CircleWipe");
-        }
-        else
-        {
-            if (backstoryCanvas != null) backstoryCanvas.SetActive(false);
-            StartCoroutine(StartGameplayWithDelay());
-        }
+        StopAllCoroutines();
+
+        if (backstoryCanvas != null) backstoryCanvas.SetActive(false);
+
+        StartCoroutine(StartGameplayWithDelay());
     }
 
     private IEnumerator StartGameplayWithDelay()
     {
-        if (gameplayTutorialUI != null) gameplayTutorialUI.SetActive(false);
-
-        // Jeda waktu setelah transisi CircleWipe selesai
-        yield return new WaitForSeconds(gameplayDelay);
+        if (gameplayDelay > 0f)
+        {
+            yield return new WaitForSeconds(gameplayDelay);
+        }
 
         if (gameplayTutorialUI != null) gameplayTutorialUI.SetActive(true);
     }
+
+    private void OnDestroy()
+    {
+        IsBackstoryRunning = false;
+    }
 }
 
-// Struct super simpel di luar class
 [System.Serializable]
 public struct StoryBlockTutorial
 {
     public Sprite storyIllustration;     // Kolom khusus gambar latar/suasana
-    [TextArea(2, 5)]
-    public string dialogueText;          // Kolom khusus teks narasi
+    [TextArea(3, 10)]
+    public string dialogueText;          // Teks cerita narasi
 }

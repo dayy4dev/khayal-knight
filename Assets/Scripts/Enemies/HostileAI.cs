@@ -180,6 +180,9 @@ public class HostileAI : MonoBehaviour, IDamageable
     {
         if (projectilePrefab == null || firePoint == null || playerTransform == null) return;
 
+        if (animator != null)
+            animator.SetTrigger("Shoot");
+
         if (hostileAudioSource != null && rangedShootSound != null)
             hostileAudioSource.PlayOneShot(rangedShootSound);
 
@@ -327,6 +330,9 @@ public class HostileAI : MonoBehaviour, IDamageable
     {
         if (animator == null || navAgent == null) return;
 
+        float currentSpeed = navAgent.velocity.magnitude;
+        animator.SetFloat("Speed", currentSpeed);
+
         Vector3 localVelocity = transform.InverseTransformDirection(navAgent.velocity);
         animator.SetFloat("Horizontal", localVelocity.x);
         animator.SetFloat("Vertical", localVelocity.z);
@@ -352,6 +358,9 @@ public class HostileAI : MonoBehaviour, IDamageable
     private void Die()
 {
     Debug.Log($"[HostileAI] {gameObject.name} mati!");
+
+    if (animator != null)
+        animator.SetTrigger("Die");
 
     if (spawner != null) spawner.NotifyEnemyDestroyed(gameObject);
 

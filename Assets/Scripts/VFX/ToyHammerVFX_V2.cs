@@ -24,6 +24,7 @@ public class ToyHammerVFX_V2 : MonoBehaviour
         if (animController != null)
         {
             animController.OnHammerAttack2Fired += PlayVFX;
+            animController.OnHammerAttack3Fired += PlayVFX;
         }
         else
         {
@@ -34,7 +35,10 @@ public class ToyHammerVFX_V2 : MonoBehaviour
     private void OnDestroy()
     {
         if (animController != null)
+        {
             animController.OnHammerAttack2Fired -= PlayVFX;
+            animController.OnHammerAttack3Fired -= PlayVFX;
+        }
     }
 
     public void PlayVFX()

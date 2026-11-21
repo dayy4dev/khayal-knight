@@ -20,6 +20,28 @@ public class MainMenu : MonoBehaviour
     [SerializeField] private AudioSource uiAudioSource;
     [SerializeField] private AudioClip clickSound;
 
+    private void Awake()
+    {
+        if (uiAudioSource == null)
+        {
+            uiAudioSource = GetComponent<AudioSource>();
+            if (uiAudioSource == null)
+            {
+                var ctrl = FindFirstObjectByType<ButtonAudioController>();
+                if (ctrl != null)
+                {
+                    uiAudioSource = ctrl.audioSource;
+                    if (clickSound == null) clickSound = ctrl.clickSound;
+                }
+            }
+        }
+
+        if (audioMixer == null && MusicManager.Instance != null)
+        {
+            audioMixer = MusicManager.Instance.GetAudioMixer();
+        }
+    }
+
     private void Start()
     {
         if (mainMenuPanel != null) mainMenuPanel.SetActive(true);

@@ -55,7 +55,7 @@ public class TutorialManager : MonoBehaviour
 
     private void Awake() => Instance = this;
 
-    private void Start()
+    private IEnumerator Start()
     {
         if (itemsTutorial) itemsTutorial.SetActive(false);
         if (meleeGroup) meleeGroup.SetActive(false);
@@ -77,7 +77,13 @@ public class TutorialManager : MonoBehaviour
             playerTransform = playerObj.transform;
         }
 
-        StartCoroutine(AlurTutorialMudah());
+        // Tunggu sampai cutscene backstory selesai jika ada
+        while (TutorialBackstory.IsBackstoryRunning)
+        {
+            yield return null;
+        }
+
+        yield return StartCoroutine(AlurTutorialMudah());
     }
 
     private void Update()
@@ -132,7 +138,7 @@ public class TutorialManager : MonoBehaviour
         SetInstruksiLayar("Guide", "Watch out! The abandoned toys are angry. Pick up your old Balloon Sword with F!");
         yield return new WaitUntil(() => sudahAmbilPedang == true);
 
-        SetInstruksiLayar("Guide", "Great! Now Hold Right Click To Aim, Then Left Click to fight through these forgotten memories!");
+        SetInstruksiLayar("Guide", "Great! Left Click to attack with your sword, or Hold Right Click to aim!");
 
         yield return new WaitUntil(() => meleeGroup == null || meleeGroup.GetComponentsInChildren<Transform>().Length <= 1);
 

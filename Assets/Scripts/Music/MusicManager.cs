@@ -8,31 +8,17 @@ public class MusicManager : MonoBehaviour
 {
     public static MusicManager Instance;
     [SerializeField] private MusicLibrary musicLibrary;
-    
-    // HAPUS ATAU KOMENTAR: Kita tidak lagi memakai satu musicSource global ini
-    // [SerializeField] private AudioSource musicSource; 
 
     [SerializeField] private List<string> lobbyPlaylist = new List<string> { "Lobby Sound 1", "Lobby Sound 2" };
     private Coroutine playlistCoroutine;
+    private Coroutine activeCrossfadeCoroutine;
     private string currentTrackName = "";
     
     // Menyimpan referensi track yang sedang aktif berputar saat ini
     private MusicTrack currentActiveTrack; 
     [SerializeField] private AudioMixer audioMixer; // Tarik AudioMixer kamu ke slot ini via Inspector prefab/scene
     
-    private void Start()
-    {
-        playlistCoroutine = StartCoroutine(PlayLobbyPlaylistAutomatically());
-        ApplySavedVolume();
-    }
-    private void ApplySavedVolume()
-    {
-        if (audioMixer != null)
-        {
-            float savedVolume = PlayerPrefs.GetFloat("MusicVolume", 0f);
-            audioMixer.SetFloat("MusicVolume", savedVolume);
-        }
-    }
+    public AudioMixer GetAudioMixer() => audioMixer;
 
     private void Awake()
     {
@@ -45,6 +31,33 @@ public class MusicManager : MonoBehaviour
             Instance = this;
             DontDestroyOnLoad(gameObject);
             SceneManager.sceneLoaded += OnSceneLoaded;
+
+            if (audioMixer == null && musicLibrary != null)
+            {
+                MusicTrack sample = musicLibrary.GetTrackFromName("Lobby Sound 1");
+                if (sample.audioSource != null && sample.audioSource.outputAudioMixerGroup != null)
+                {
+                    audioMixer = sample.audioSource.outputAudioMixerGroup.audioMixer;
+                }
+            }
+        }
+    }
+
+    private void Start()
+    {
+        if (playlistCoroutine == null && SceneManager.GetActiveScene().name == "MainMenu")
+        {
+            playlistCoroutine = StartCoroutine(PlayLobbyPlaylistAutomatically());
+        }
+        ApplySavedVolume();
+    }
+
+    private void ApplySavedVolume()
+    {
+        if (audioMixer != null)
+        {
+            float savedVolume = PlayerPrefs.GetFloat("MusicVolume", 0f);
+            audioMixer.SetFloat("MusicVolume", savedVolume);
         }
     }
 
@@ -61,7 +74,7 @@ public class MusicManager : MonoBehaviour
             currentTrackName = "";
             playlistCoroutine = StartCoroutine(PlayLobbyPlaylistAutomatically());
         }
-        else if (scene.name == "PlayScene")
+        else if (scene.name == "PlayScene" || scene.name == "Tutorial")
         {
             StopLobbyPlaylist();
             PlayMusic("Game");
@@ -70,53 +83,71 @@ public class MusicManager : MonoBehaviour
 
     public void PlayMusic(string trackName, float fadeDuration = 0.5f)
     {
-        if (trackName == currentTrackName) return;
+        if (trackName == currentTrackName && currentActiveTrack.audioSource != null && currentActiveTrack.audioSource.isPlaying) return;
         currentTrackName = trackName;
 
-        // Ambil data track baru dari library
+        if (musicLibrary == null) return;
         MusicTrack nextTrack = musicLibrary.GetTrackFromName(trackName);
 
         if (nextTrack.clip != null && nextTrack.audioSource != null)
         {
             nextTrack.audioSource.loop = true;
-            StartCoroutine(AnimateMusicCrossfade(nextTrack, fadeDuration));
+            if (activeCrossfadeCoroutine != null)
+            {
+                StopCoroutine(activeCrossfadeCoroutine);
+            }
+            activeCrossfadeCoroutine = StartCoroutine(AnimateMusicCrossfade(nextTrack, fadeDuration));
         }
     }
 
     IEnumerator AnimateMusicCrossfade(MusicTrack nextTrack, float fadeDuration = 0.5f)
     {
-        float percent = 0;
-        
-        // 1. FADE OUT: Mengecilkan volume AudioSource yang sedang aktif saat ini (jika ada)
         AudioSource oldSource = currentActiveTrack.audioSource;
-        if (oldSource != null && oldSource.isPlaying)
+        if (oldSource != null && oldSource.isPlaying && oldSource != nextTrack.audioSource)
         {
             float startVolume = oldSource.volume;
-            while (percent < 1)
+            float percent = 0f;
+            while (percent < 1f)
             {
-                percent += Time.deltaTime * 1 / fadeDuration;
-                oldSource.volume = Mathf.Lerp(startVolume, 0, percent);
+                percent += (fadeDuration > 0 ? Time.unscaledDeltaTime / fadeDuration : 1f);
+                oldSource.volume = Mathf.Lerp(startVolume, 0f, percent);
+                yield return null;
+            }
+            oldSource.volume = 0f;
+            oldSource.Stop();
+        }
+        else if (oldSource != null && oldSource == nextTrack.audioSource && oldSource.isPlaying)
+        {
+            float startVolume = oldSource.volume;
+            float percent = 0f;
+            while (percent < 1f)
+            {
+                percent += (fadeDuration > 0 ? Time.unscaledDeltaTime / fadeDuration : 1f);
+                oldSource.volume = Mathf.Lerp(startVolume, 0f, percent);
                 yield return null;
             }
             oldSource.Stop();
         }
 
-        // Ganti referensi track aktif ke track yang baru
-       currentActiveTrack = nextTrack;
+        currentActiveTrack = nextTrack;
         AudioSource newSource = currentActiveTrack.audioSource;
-
-        newSource.clip = nextTrack.clip;
-        newSource.volume = 0;
-        newSource.Play();
-
-        percent = 0;
-        while (percent < 1)
+        if (newSource != null)
         {
-            percent += Time.deltaTime * 1 / fadeDuration;
-       
-            newSource.volume = Mathf.Lerp(0, 1f, percent); 
-            yield return null;
+            newSource.clip = nextTrack.clip;
+            newSource.volume = 0f;
+            newSource.Play();
+
+            float inPercent = 0f;
+            while (inPercent < 1f)
+            {
+                inPercent += (fadeDuration > 0 ? Time.unscaledDeltaTime / fadeDuration : 1f);
+                newSource.volume = Mathf.Lerp(0f, 1f, inPercent);
+                yield return null;
+            }
+            newSource.volume = 1f;
         }
+
+        activeCrossfadeCoroutine = null;
     }
 
     IEnumerator PlayLobbyPlaylistAutomatically()
@@ -125,19 +156,22 @@ public class MusicManager : MonoBehaviour
 
         while (true)
         {
-            string trackToPlay = lobbyPlaylist[currentIndex];
-            MusicTrack nextTrack = musicLibrary.GetTrackFromName(trackToPlay);
+            if (lobbyPlaylist == null || lobbyPlaylist.Count == 0) yield break;
 
-            if (nextTrack.clip != null && nextTrack.audioSource != null)
+            string trackToPlay = lobbyPlaylist[currentIndex];
+            if (musicLibrary != null)
             {
-                currentTrackName = trackToPlay;
-                nextTrack.audioSource.loop = false; // Playlist otomatis biasanya tidak looping per lagu
-                yield return StartCoroutine(AnimateMusicCrossfade(nextTrack, 0.5f));
+                MusicTrack nextTrack = musicLibrary.GetTrackFromName(trackToPlay);
+                if (nextTrack.clip != null && nextTrack.audioSource != null)
+                {
+                    currentTrackName = trackToPlay;
+                    nextTrack.audioSource.loop = false;
+                    yield return StartCoroutine(AnimateMusicCrossfade(nextTrack, 0.5f));
+                }
             }
 
-            yield return new WaitForSeconds(0.2f);
+            yield return new WaitForSecondsRealtime(0.2f);
 
-            // Tunggu sampai AudioSource dari track yang aktif selesai berputar
             while (currentActiveTrack.audioSource != null && currentActiveTrack.audioSource.isPlaying)
             {
                 yield return null;
@@ -156,10 +190,7 @@ public class MusicManager : MonoBehaviour
         if (playlistCoroutine != null)
         {
             StopCoroutine(playlistCoroutine);
-        }
-        if (currentActiveTrack.audioSource != null)
-        {
-            currentActiveTrack.audioSource.Stop();
+            playlistCoroutine = null;
         }
     }
 }

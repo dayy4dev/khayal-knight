@@ -268,7 +268,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fff2c4540c980ce4480bede233d02dc6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BalloonSwordVFX
-  slashVfxPrefab: {fileID: 2177472768528519091, guid: 414e7c7f08af50e47b2def0750d8834a, type: 3}
+  slashVfxPrefab: {fileID: 319117072933122630, guid: 18be914fe54524c4190d7d5fdbdc39ee, type: 3}
   offset: {x: 0, y: 1, z: 1}
   localScale: {x: 2, y: 2, z: 2}
   localRotation: {x: 0, y: 0, z: 0}

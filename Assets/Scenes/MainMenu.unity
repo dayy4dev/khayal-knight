@@ -2959,8 +2959,8 @@ MonoBehaviour:
   pauseMenu: {fileID: 0}
   playSelectionMenu: {fileID: 1253753118}
   mainMenuPanel: {fileID: 1419950925}
-  uiAudioSource: {fileID: 0}
-  clickSound: {fileID: 0}
+  uiAudioSource: {fileID: 914152993}
+  clickSound: {fileID: 8300000, guid: ec7acb2e1e1ba164f9cafc0d6e1a9e55, type: 3}
 --- !u!1 &936831539
 GameObject:
   m_ObjectHideFlags: 0
@@ -5438,7 +5438,7 @@ MonoBehaviour:
   lobbyPlaylist:
   - Lobby Sound 1
   - Lobby Sound 2
-  audioMixer: {fileID: 0}
+  audioMixer: {fileID: 24100000, guid: 2738c10d8c88e4741a24bff20edfec02, type: 2}
 --- !u!114 &1524929853
 MonoBehaviour:
   m_ObjectHideFlags: 0

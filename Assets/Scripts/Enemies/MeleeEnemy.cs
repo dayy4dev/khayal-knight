@@ -197,13 +197,24 @@ public class MeleeEnemy : MonoBehaviour, IDamageable
 
         if (!isOnAttackCooldown)
         {
-            //Picu animasi attack acak
+            // Picu animasi attack acak
             TriggerRandomAttackAnimation();
 
-            // Eksekusi damage dan cooldown
-            ExecuteMeleeStrike();
-            StartCoroutine(AttackCooldownRoutine());
+            // Eksekusi damage tersinkron dengan ayunan animasi dan cooldown
+            StartCoroutine(AttackRoutine());
         }
+    }
+
+    private IEnumerator AttackRoutine()
+    {
+        isOnAttackCooldown = true;
+        // Jeda waktu (windup) agar damage selaras dengan visual ayunan tangan musuh
+        yield return new WaitForSeconds(0.35f);
+        ExecuteMeleeStrike();
+
+        float remainingCooldown = Mathf.Max(0.1f, attackCooldown - 0.35f);
+        yield return new WaitForSeconds(remainingCooldown);
+        isOnAttackCooldown = false;
     }
 
     private void ExecuteMeleeStrike()

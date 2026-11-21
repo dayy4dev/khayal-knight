@@ -36,6 +36,10 @@ public class ToyHammer : Weapon
 
         if (heavyImpact == null)
             heavyImpact = GetComponent<HeavyImpact>();
+        if (heavyImpact == null)
+            heavyImpact = GetComponentInChildren<HeavyImpact>();
+        if (heavyImpact == null)
+            heavyImpact = GetComponentInParent<HeavyImpact>();
 
         // Track enemies damaged by the hitbox so HeavyImpact can skip them
         if (hitbox != null)

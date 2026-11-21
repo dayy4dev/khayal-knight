@@ -4462,7 +4462,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4004533348303330872, guid: 3c6cebcfba88ecf49a52871d9619d3b6, type: 3}
       propertyPath: maxHealth
-      value: 250
+      value: 100
       objectReference: {fileID: 0}
     - target: {fileID: 4004533348303330872, guid: 3c6cebcfba88ecf49a52871d9619d3b6, type: 3}
       propertyPath: playerAudioSource
@@ -16454,7 +16454,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!114 &1929026394
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -16534,7 +16534,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2b47c7c99f731d84e9ec64b56c2a6e65, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerHealth
-  maxHealth: 11594
+  maxHealth: 100
   deathSceneReloadDelay: 2
   playerAudioSource: {fileID: 1221553389}
   hurtSounds:
